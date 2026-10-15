@@ -1,0 +1,25 @@
+/models
+/medical_samples
+/faissindex
+/source_documents/models
+*.gguf
+
+# Python environments and cache
+**/venv/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+
+# Frontend dependencies and build files
+**/node_modules/
+**/dist/
+
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,35 @@
+
+# Python environments and cache
+**/venv/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+
+# Generated vector indexes and models
+**/faissindex/
+**/models/
+**/*.gguf
+
+# Frontend dependencies
+**/node_modules/
+**/dist/
+
+# Medical PDFs
+**/source_documents/*.pdf
+**/source_documents/**/*.pdf
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db
+# Unrelated presentation and temporary files
+Multi_Agent_Swarm_PPT.pptx
+temp.txt
+
+# Research paper - exclude until redistribution rights are confirmed
+AI_attention_paper.pdf
