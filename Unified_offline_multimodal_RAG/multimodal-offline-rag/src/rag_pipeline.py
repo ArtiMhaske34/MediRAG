@@ -1,23 +1,23 @@
 import os
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
+from langchain_ollama import OllamaEmbeddings
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
-# IMPORT DP EMBEDDINGS
-from src.dp_embeddings import DPHuggingFaceEmbeddings
 
 
 class RAGPipeline:
     def __init__(self, index_dir: str = "faissindex"):
         self.index_dir = index_dir
         
-        print("Loading Differentially Private Embedding Model...")
-        self.embeddings = DPHuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            epsilon=1.2 
+        print("Connecting to local Ollama embedding model (nomic-embed-text)...")
+        self.embeddings = OllamaEmbeddings(
+            model=os.getenv("MEDIRAG_EMBEDDING_MODEL", "nomic-embed-text"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+            client_kwargs={"timeout": 120},
         )
         
         print("Loading local FAISS vector store...")
@@ -35,11 +35,13 @@ class RAGPipeline:
         self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 2})
 
         print("Connecting to local Ollama Service (Phi-3)...")
-        self.llm = Ollama(
-            model="phi3",          # ⚡ CHANGED FROM llama3.1
+        self.llm = OllamaLLM(
+            model="phi3",
             temperature=0.1,
-            num_ctx=3072, 
-            stop=["<|eot_id|>"]
+            num_ctx=2048,
+            num_predict=160,
+            client_kwargs={"timeout": 120},
+            stop=["<|eot_id|>"],
         )
 
         template = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>

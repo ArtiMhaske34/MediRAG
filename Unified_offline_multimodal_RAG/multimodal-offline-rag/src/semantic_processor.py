@@ -1,11 +1,10 @@
 import os
 from typing import List, Dict
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-from src.dp_embeddings import DPHuggingFaceEmbeddings
 
 class SemanticProcessor:
     def __init__(self, index_dir: str = "faissindex"):
@@ -16,15 +15,15 @@ class SemanticProcessor:
             separators=["\n\n", "\n", ".", " ", ""]
         )
         
-        # USE THE DP EMBEDDING CLASS INSTEAD OF THE STANDARD ONE
-        print("Loading Differentially Private Embedding Model...")
-        self.embeddings = DPHuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            epsilon=1.2 # Adjust this value to test the Privacy-Utility trade-off
+        print("Connecting to local Ollama embedding model (nomic-embed-text)...")
+        self.embeddings = OllamaEmbeddings(
+            model=os.getenv("MEDIRAG_EMBEDDING_MODEL", "nomic-embed-text"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+            client_kwargs={"timeout": 120},
         )
         self.vectorstore = None
 
-    def chunk_and_embed(self, text_corpus: List[Dict[str, str]]):
+    def chunk_and_embed(self, text_corpus: List[Dict[str, str]], replace: bool = False):
         """
         Takes raw text, chunks it, embeds it, and adds it to the FAISS index.
         text_corpus expected format: [{"text": "...", "source": "file.pdf"}]
@@ -39,8 +38,8 @@ class SemanticProcessor:
         chunks = self.text_splitter.split_documents(documents)
         print(f"Created {len(chunks)} chunks.")
 
-        print("Computing embeddings and building FAISS Flat L2 index... [cite: 561-562]")
-        if os.path.exists(os.path.join(self.index_dir, "index.faiss")):
+        print("Computing embeddings and building FAISS index...")
+        if not replace and os.path.exists(os.path.join(self.index_dir, "index.faiss")):
             # Load existing index and add new chunks
             self.vectorstore = FAISS.load_local(self.index_dir, self.embeddings, allow_dangerous_deserialization=True)
             self.vectorstore.add_documents(chunks)
