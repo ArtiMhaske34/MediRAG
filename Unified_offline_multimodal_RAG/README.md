@@ -1,128 +1,69 @@
-# MediRAG — Local Healthcare RAG Assistant
+# MediRAG
 
-A privacy-oriented healthcare question-answering project using Retrieval-Augmented Generation (RAG), local language models, and a web interface.
+MediRAG is an educational, locally run retrieval-augmented generation (RAG) prototype for searching and comparing information in indexed health-record documents. It uses a React/Vite frontend, a FastAPI backend, a local FAISS index, and Ollama for local language and embedding models.
 
-## Overview
-
-MediRAG is a prototype that lets users ask questions about medical documents stored locally. It retrieves relevant document passages and uses a language model to generate an answer with source-document references.
-
-The project combines Python, FastAPI, FAISS, Ollama, and a React frontend.
-
-**Project status:** Local prototype tested with sample PDF documents. This is an educational project, not a certified clinical decision-support system.
+> **Scope:** This is a fictional-data/education prototype, not a clinical decision system. Responses can be incomplete or wrong and must be checked against the cited source passages. It is not certified for HIPAA compliance and does not claim differential privacy or measured clinical accuracy.
 
 ## Features
 
-- **Local document retrieval:** Loads medical documents and searches a local FAISS vector index.
-- **Retrieval-Augmented Generation:** Uses retrieved context to help answer questions about the documents.
-- **Embedding noise experiment:** Applies Laplacian noise to document embeddings using a configurable epsilon value.
-- **Local language model:** Integrates with Ollama and the Phi-3 model.
-- **FastAPI backend:** Provides an API for submitting questions.
-- **React frontend:** Offers a web interface for interacting with the backend.
-- **Source references:** Returns retrieved source documents alongside answers.
+- Search across indexed records, with an optional selected-record filter.
+- Combined record search and BMI calculation when a request includes weight and height.
+- Compare two selected documents against the same question.
+- Add supported local PDF, DOCX, and FHIR JSON documents, or import a small Synthea FHIR ZIP sample through the document library.
+- Review returned evidence and source files in the workspace.
 
-## Technology Stack
+## Requirements
 
-- Python
-- FastAPI
-- LangChain
-- FAISS
-- Sentence Transformers
-- Ollama / Phi-3
-- React
-- Differential Privacy-inspired embedding noise
+- Windows, Python 3.10 or newer, Node.js/npm, and Ollama.
+- Ollama models `phi3` and `nomic-embed-text` available locally. Download these models during setup while internet access is available; application inference then runs through the local Ollama service.
+- Python packages listed in `multimodal-offline-rag/requirements.txt` and frontend packages listed in `rag-frontend/package.json`.
 
-## Architecture
+## Run locally on Windows
 
-1. **Document ingestion:** Read supported documents and prepare text for retrieval.
-2. **Embedding generation:** Convert document text into vectors.
-3. **Privacy experiment:** Apply Laplacian noise to document embeddings.
-4. **Vector search:** Store and retrieve vectors using FAISS.
-5. **Answer generation:** Use the local language model to answer questions based on retrieved context.
-6. **Web interface:** Submit questions through the React frontend and display answers.
+Open three PowerShell terminals from the repository folder (`Unified_offline_multimodal_RAG`). Keep Ollama running.
 
-## Prerequisites
-
-- Python version compatible with the installed dependencies
-- Node.js and npm for the frontend
-- Ollama installed locally
-- The Phi-3 model downloaded through Ollama
-- Sufficient RAM and disk space for the model and dependencies
-
-## Setup
-
-### 1. Install Ollama and the model
-
-Install Ollama from its official website, then run:
-
-```bash
-ollama pull phi3
-```
-
-### 2. Set up the Python environment
-
-From the backend directory:
-
-```bash
-python -m venv venv
-```
-
-Activate the environment on Windows:
+### 1. Backend API
 
 ```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Add sample documents
-
-Place only synthetic, non-identifiable, and legally shareable sample documents in `source_documents/`. Do not use real patient records or confidential healthcare data.
-
-### 4. Build the vector index
-
-```bash
-python ingest.py
-```
-
-This generates a local FAISS index. The generated index should not normally be committed to Git.
-
-### 5. Start the backend
-
-```bash
+cd .\multimodal-offline-rag
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+ollama pull phi3
+ollama pull nomic-embed-text
 python api.py
 ```
 
-Check the API configuration and terminal output for the local server address.
+If the virtual environment and dependencies are already set up, activate it and run `python api.py` instead of repeating installation. The API listens on `http://127.0.0.1:8000`.
 
-### 6. Start the frontend
+### 2. Frontend
 
-Open a separate terminal:
-
-```bash
-cd ../rag-frontend
+```powershell
+cd .\rag-frontend
 npm install
 npm run dev
 ```
 
-Use the local URL printed by the frontend development server.
+Open the local URL printed by Vite, usually `http://localhost:5173`.
 
-## Privacy and Safety Notes
+### 3. Check API status
 
-- Keep patient records and confidential data out of public repositories.
-- Local processing can reduce external data sharing, but it does not by itself guarantee absolute privacy.
-- Adding noise to embeddings is not, by itself, proof of a formal Differential Privacy guarantee. Such a guarantee requires a suitable mechanism, sensitivity analysis, and accounting of the complete data-processing pipeline.
-- A local FAISS index should not be described as encrypted unless encryption is actually implemented and verified.
-- This prototype is not HIPAA-certified and should not be used to make medical decisions.
+Open `http://127.0.0.1:8000/health`. The API should report that its pipeline is loaded and show whether Ollama and the configured models are available.
 
-## Future Improvements
+## Documents and index
 
-- Evaluate retrieval quality and answer grounding.
-- Add automated tests and error handling.
-- Strengthen privacy analysis and document the threat model.
-- Improve setup instructions and dependency management.
-- Evaluate the agentic routing features separately before describing them as implemented.
+The backend stores uploaded documents and the FAISS index under `multimodal-offline-rag/source_documents` and `multimodal-offline-rag/faissindex`. Add documents through the Document library in the app. Indexing can take time, especially for many or large files, because text is split and embedded locally. Start with a small set of fictional/demo records.
 
+Keep private records, local indexes, feedback logs, and generated backup folders out of public GitHub commits. Review `git status` before committing.
+
+## Configuration
+
+- `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434`.
+- `MEDIRAG_EMBEDDING_MODEL` defaults to `nomic-embed-text`.
+- The chat model is currently configured as `phi3` in the backend.
+
+## Notes
+
+- The app does not send prompts or documents to a hosted AI API; its model requests target the local Ollama service.
+- Model/package installation may require internet access. For a fully disconnected machine, install dependencies and download the Ollama models before disconnecting, then transfer the project and required local model files securely.
+- The Evaluation/accuracy scoring page has been removed. No accuracy percentage is currently computed.
